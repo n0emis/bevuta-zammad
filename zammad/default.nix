@@ -8,19 +8,19 @@
 , procps
 , ruby
 , postgresql
-, mysql
 , imlib2
+, nodejs
 , yarn
 , yarn2nix-moretea
 , v8
+, cacert
 , srcOverride ? null
 , depsDir ? ./.  # Should contain gemset.nix, yarn.nix and package.json.
 }:
 
 let
-
   pname = "zammad";
-  version = "3.6.0";
+  version = "5.0.0";
 
   sourceDir = fetchFromGitHub (builtins.fromJSON (builtins.readFile ./source.json));
 
@@ -45,7 +45,7 @@ let
     gemdir = sourceDir;
     gemset = depsDir + "/gemset.nix";
     groups = [
-      # TODO: do we need all of the groups?
+      "assets"
       "unicorn"   # server
       "nulldb"
       "test"
@@ -89,13 +89,18 @@ in stdenv.mkDerivation {
 
   src = sourceDir;
 
+  patches = [
+    ./0001-nulldb.patch
+  ];
+
   buildInputs = [
     rubyEnv
     rubyEnv.wrappedRuby
     rubyEnv.bundler
     yarn
-    postgresql
+    nodejs
     procps
+    cacert
   ];
 
   RAILS_ENV = "production";
@@ -104,23 +109,7 @@ in stdenv.mkDerivation {
     node_modules=${yarnEnv}/libexec/Zammad/node_modules
     ${yarn2nix-moretea.linkNodeModulesHook}
 
-    # TODO: start postgresql on a file socket
-    export PGDATA=$TMP/db
-    export PGHOST=$TMP/socketdir
-    export DATABASE_URL="postgresql:///test?host=$PGHOST"
-
-    mkdir $PGDATA $PGHOST
-    pg_ctl initdb
-    echo "unix_socket_directories = '$PGHOST'" >> $PGDATA/postgresql.conf
-    pg_ctl start &
-    trap "pkill postgres || true" EXIT
-    sleep 1
-    psql -d postgres -c "create database test"
-
-    rake assets:precompile
-
-    psql -d postgres -c "drop database test"
-    pg_ctl stop -m fast
+    rake DATABASE_URL="nulldb://user:pass@127.0.0.1/dbname" assets:precompile
   '';
 
   installPhase = ''

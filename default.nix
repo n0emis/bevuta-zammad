@@ -6,7 +6,7 @@ in
 
 {
   zammad = pkgs.callPackage ./zammad {
-    ruby = pkgs.ruby_2_6;
+    ruby = pkgs.ruby_2_7;
   };
   zammad-test = import ./test.nix { inherit pkgs; };
 }

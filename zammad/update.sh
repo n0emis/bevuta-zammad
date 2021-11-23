@@ -31,7 +31,7 @@ trap cleanup EXIT
 pushd $WORK_DIR
 
 echo ":: Creating source.json"
-nix-prefetch-github zammad zammad --rev $VERSION --json > $TARGET_DIR/source.json
+nix-prefetch-github zammad zammad --rev $VERSION --json> $TARGET_DIR/source.json
 
 echo ":: Fetching source"
 curl -L https://github.com/zammad/zammad/archive/$VERSION.tar.gz --output source.tar.gz
